@@ -68,11 +68,7 @@ router.post(
     }
 
     const user = req.body;
-
-    console.log("User is: ", user);
     user.password = bcryptjs.hashSync(user.password);
-
-    console.log("After encrypt pwd: ", user.password);
 
     const recUser = await db.User.create(user);
     if (recUser) {

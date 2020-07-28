@@ -64,7 +64,6 @@ router.post(
   async (req, res) => {
     const errors = validationResult(req);
     const user = req.currentUser;
-    console.log("reqUser on Course POST: ", user);
 
     if (!errors.isEmpty()) {
       const errorMessages = errors.array().map((error) => error.msg);
@@ -79,7 +78,8 @@ router.post(
 
       const recCourse = await db.Course.create(finalCourse);
       if (recCourse) {
-        res.location("/");
+        //setting location header to the URI of the recently created course record
+        res.location(`/api/courses/${recCourse.id}`);
         res.status(201).end();
       } else {
         res
@@ -106,27 +106,36 @@ router.put(
   ],
   authenticateUser,
   async (req, res) => {
+    const errors = validationResult(req);
     const user = req.currentUser;
-    const courseRec = await db.Course.findOne({
-      where: { id: Number(req.params.id) },
-    });
-    if (courseRec) {
-      if (courseRec.userId === user.id) {
-        courseRec.update(req.body);
-        res.status(204).end();
-      } else {
-        res.status(403).json({
-          message: "Unauthorized Update: User doesn't own the requested course",
-        });
-      }
+
+    if (!errors.isEmpty()) {
+      const errorMessages = errors.array().map((error) => error.msg);
+      res.status(400).json({ errors: errorMessages });
     } else {
-      res
-        .status(500)
-        .json({ message: "Something went wrong while updating Course" });
+      const courseBody = req.body;
+
+      const courseRec = await db.Course.findOne({
+        where: { id: Number(req.params.id) },
+      });
+      if (courseRec) {
+        if (courseRec.userId === user.id) {
+          courseRec.update(courseBody);
+          res.status(204).end();
+        } else {
+          res.status(403).json({
+            message:
+              "Unauthorized Update: User doesn't own the requested course",
+          });
+        }
+      } else {
+        res
+          .status(500)
+          .json({ message: "Something went wrong while updating Course" });
+      }
     }
   }
 );
-
 
 //deletes course
 //additionally checks if authenticated user owns the requested course
